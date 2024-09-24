@@ -1,1 +1,28 @@
+ChatGPT was used to give me an idea of what demographic factors to look into when going through the census information for the different wards.
 
+
+You said:
+what demographic factors commonly influence who voters decide to vote for?
+
+
+ChatGPT said:
+ChatGPT
+Voter decisions are influenced by a variety of demographic factors, which often shape preferences, priorities, and values. Common demographic factors include:
+
+Age: Younger voters tend to support more progressive policies, while older voters often lean conservative. However, this can vary depending on the country and current political climate.
+
+Education: Higher levels of education are often associated with more liberal voting patterns, particularly on social issues, while less-educated voters may lean conservative.
+
+Income: Wealthier voters may support policies that favor lower taxes and free-market principles, while lower-income voters tend to favor candidates advocating for stronger social safety nets and economic redistribution.
+
+Race and Ethnicity: Minority groups, particularly Black and Hispanic voters, often lean toward more liberal candidates, while white voters, depending on their background, may vary, with some segments favoring conservative policies.
+
+Gender: Women are more likely to support liberal or progressive candidates, particularly on issues related to healthcare, education, and reproductive rights, while men may more often lean conservative, especially on economic and security issues.
+
+Geography: Urban voters tend to favor progressive or liberal candidates, while rural voters are more likely to support conservative candidates.
+
+Religion: Religious beliefs, particularly among evangelical Christians and Catholics, often influence conservative voting, particularly on issues like abortion and same-sex marriage, while more secular voters or those from non-Christian backgrounds may lean progressive.
+
+Marital Status: Married voters, particularly those with children, may prioritize family-centric policies and lean conservative, while single voters might favor progressive social policies.
+
+These factors often interact with one another, creating complex voter profiles that influence decision-making at the polls.
