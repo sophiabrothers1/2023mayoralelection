@@ -9,7 +9,7 @@ This project analyzes voter data from the 2023 Toronto Mayoral By-Election, focu
 The repo is structured as:
 
 -   `data/raw_data` contains the raw data as obtained from opendatatoronto.
--   `other` contains details about LLM chat interactions, and sketches.
+-   `other` contains details about LLM chat interactions and sketches.
 -   `paper` contains the files used to generate the paper, including the Quarto document and reference bibliography file, as well as the PDF of the paper. 
 -   `scripts` contains the R scripts used to simulate, download and clean data.
 
