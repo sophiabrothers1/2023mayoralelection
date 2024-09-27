@@ -1,1 +1,283 @@
+---
+title: "Analyzing Regional Voting Patterns for the 2023 Toronto Mayoral By-Election"
+subtitle: "How Regional Demographics Can Shape Elections"
+author: "Sophia Brothers"
+thanks: "Code and data are available at: https://github.com/sophiabrothers1/2023mayoralelection."
+date: today
+date-format: long
+abstract: "The 2023 Toronto Mayoral By-Election, prompted by the resignation of Mayor John Tory, witnessed a field of 102 candidates with Olivia Chow, Ana Bailão, and Mark Saunders emerging as the front-runners. Aggregated voter data is released to the public in order to provide transparency, trust, and accountability in the electoral process. This analysis examines the voting data, focusing on the distribution of votes across Toronto's 25 wards. This allowed us to find that different geographical regions favor different candidates at varying intensities, likely because of varying regional demographic profiles."
+format: pdf
+number-sections: true
+bibliography: references.bib
+---
 
+{r}
+#| include: false
+#| warning: false
+#| message: false
+
+library(readxl)
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+
+# create an empty list to store data for each of the 25 wards
+wards <- vector("list", 25)
+
+# load each sheet of data into the list of wards
+for (i in 1:25) {
+  ward_data <- read_excel("~/Downloads/2023 Office of the Mayor.xlsx", sheet = paste0("Ward ", i))
+  
+  # candidate names (column 1 starting from row 4)
+  candidate_names <- ward_data[[1]][4:nrow(ward_data)]
+  
+  # subdivision names (row 2 starting from column B)
+  subdivision_names <- as.character(ward_data[2, 2:ncol(ward_data)])
+  
+  # dtaframe with the # of votes for each candidate in each subdivision
+  votes_data <- data.frame(Subdivision = subdivision_names)
+  
+  # loop through candidate names and extract votes for each
+  for (j in seq_along(candidate_names)) {
+    candidate_votes <- as.numeric(ward_data[j + 3, 2:ncol(ward_data)])
+    votes_data <- cbind(votes_data, candidate_votes)
+  }
+  
+  # column names for votes_data
+  colnames(votes_data)[-1] <- candidate_names
+  
+  # save as the appropriate ward # in the list
+  wards[[i]] <- votes_data
+}
+
+# list to store summary statistics
+summary_tables <- vector("list", 25)
+
+# store total votes
+total_votes_all <- data.frame(Candidate = character(), total_votes = numeric(), Ward = character(), stringsAsFactors = FALSE)
+
+# limit to top 3 candidates
+selected_candidates <- c("Chow Olivia", "Bailão Ana", "Saunders Mark")
+filtered_votes <- total_votes_all %>%
+    filter(Candidate %in% selected_candidates)
+
+for (i in 1:25) {
+  # data for the current ward (i)
+  ward_data <- wards[[i]]
+  ward_name <- paste0("Ward ", i)
+  
+  # reformat the dataframe to have ward + subdivision info as a column with votes + name
+  ward_data_long <- ward_data %>%
+    pivot_longer(-Subdivision, names_to = "Candidate", values_to = "Votes") %>%
+    mutate(Ward = ward_name) %>%
+    mutate(Votes = as.numeric(Votes)) %>%
+    # remove NA values if any exist
+    filter(!is.na(Votes))
+  
+  # determine total votes by candidate for ward i
+  summary_table <- ward_data_long %>%
+    group_by(Candidate) %>%
+    summarize(total_votes = sum(Votes, na.rm = TRUE), .groups = "drop")
+  
+  # add summary table in the list
+  summary_tables[[i]] <- summary_table
+  
+  # add to big overall dataset
+  total_votes_all <- bind_rows(total_votes_all, summary_table %>% mutate(Ward = ward_name))
+  
+}
+
+Introduction
+
+The 2023 Toronto Mayoral By-Election occurred after the resignation of Mayor John Tory, who was re-elected in 2022. The city of Toronto is home to almost 3 million people and the Mayor plays a large role in overseeing the success of the city. There was significant public interest in this election with a 38.5% voter turnout, which is 9% higher than that of the 2022 election (@thelocal). 102 people ran for the Mayor of Toronto, but voter polling indicated three front-running candidates: Olivia Chow, Ana Bailãlo, and Mark Saunders (@thelocal). These candidates represent diverse political interests and backgrounds, and understanding the distribution of votes by ward and subdivision helps to better understand Toronto's geopolitical landscape and general regional political dynamics.
+
+Granular analysis of the number of votes each candidate received by ward and subdivision allows us to identify variations in voting patterns and determine which areas contribute the most to the success of the winning candidate, and which areas are more highly contested. Every area of Toronto has a different background, whether it be variations in socioeconomic status, race, gender, etc (@wardprofiles). Knowing and collecting this data is imperative to determining what issues and policies are important to different demographic backgrounds. 
+
+As mayoral elections only occur every 4 years and societal priorities and community interests evolve overtime, it is important that this data is consistently released in order to make sure new literature is accurate. This allows policymakers and people involved in research to learn about the shifting voting demographics and any potential implications that may arise from that. Releasing the voting numbers also builds trust in the electoral process, keeps policy makers accountable (dissuades election fraud), and ensures that electoral districts are drawn fairly. 
+
+In @sec-data, we will discuss the background and context of the data used and collected, analysis of the data that is visualized through various graphs and tables, and a discussion of the results and their implications. 
+
+Data
+
+This data originates from the 2023 Toronto Mayoral By-Election. Residents of Toronto are eligible to cast one vote for who they believe should be the Mayor of Toronto. These votes are cast officially at one of many voting locations before being anonymized and aggregated by the City Clerk’s Office, where the data is then published. It includes the number of votes cast for each candidate in all 25 wards, which were then further broken down by polling subdivision (@opendatatoronto). This is the official form of data for the 2023 Toronto Mayoral By-Election and therefore the most accurate dataset available.
+
+There were 4 different variables included in this dataset.Ward Number: Represents each of Toronto’s 25 wards (geographical areas of Toronto).Subdivision: Geographical areas within a ward.Candidate Names: All of the official candidates who ran for Mayor.Vote Count: The number of votes a candidate received.
+
+Using R (@citeR), I was able to generate the following tables and figures to reflect the data provided. As data was provided in separate sheets per ward, the data was cleaned by transforming it into a long format and combined into one data frame.Although the Mayor of Toronto is elected by popular vote, each ward and subdivision may have varying demographic profiles that influence their voting patterns. Each ward also has their own representative. As shown in @fig-totalvotes, Olivia Chow won the popular vote to become Toronto’s Mayor, defeating Ana Bailão. This figure focuses on candidates who received more than 1,000 overall votes, reducing the pool from 102 to 19 candidates, thereby highlighting the most competitive races.
+
+Aggregated data containing the total amount of votes each candidate received by ward can be found in @tbl-wardtotals in the Appendix.
+
+{r}
+#| label: fig-totalvotes
+#| fig-cap: The number of votes candidates received across all wards, filtered only to candidates with more than 1000 total votes.
+#| echo: false
+
+total_votes_all_candidates <- total_votes_all %>%
+  group_by(Candidate) %>%
+  summarize(Total_Votes = sum(total_votes, na.rm = TRUE), .groups = "drop") %>%
+  # removing candidates that start with city ward because those are totals
+  filter(Total_Votes > 1000, !grepl("^City Ward", Candidate))
+
+# plot # of total votes for all candidates with > 1000 votes
+ggplot(total_votes_all_candidates, aes(x = reorder(Candidate, -Total_Votes), y = Total_Votes, fill = Candidate)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Total Votes for Each Candidate Across All Wards",
+    x = "Candidate",
+    y = "Total Votes"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+@tbl-contestedwards helps to show regional preferences for each candidate. Wards 4, 14, and 13, which represent Parkdale - High Park, Toronto - Danforth, and Toronto Centre respectively, were all carried heavily by Olivia Chow. Meanwhile Wards 2, 8, and 15, which represent Etobicoke Centre, Eglington Lawrence, and Don Valley West respectively, were all carried heavily by Ana Bailão (@wardprofiles). 
+
+Looking at the median household income of each of these wards, we see a pattern. The wards carried by Chow had median household incomes of 89k, 131k, and 127k. Meanwhile, the wards carried by Bailão had median household incomes of 147k, 176k, and 225k. Similarly the wards heavily carried by Bailão had a higher median age than those carried by Chow (@wardprofiles). 
+
+On the flip side, there are a number of wards that were more tightly contested (although since the election is by popular vote, this doesn’t speak to the winner of the election but rather the demographic of the ward itself). Bailão had only 4 more votes than Chow in Ward 7. Wards 16, 25, and 18 also had differences of less than 100 votes between either of the two candidates (@opendatatoronto).
+
+{r}
+#| label: tbl-contestedwards
+#| tbl-cap: The number of votes between the candidate with the most votes and the candidate with the second most votes in each ward.
+#| echo: false
+#| warning: false
+#| message: false
+
+# dataframe to store the info needed for this plot
+# called second and third because the aggregated total votes per ward is 1st since counted as candidate name
+second_third_results <- data.frame(Ward = character(), 
+                                   Second_Place = character(), 
+                                   Third_Place = character(), 
+                                   Vote_Difference = numeric(), 
+                                   stringsAsFactors = FALSE)
+
+# go through each summary table to find the winning (second) and second place (third) candidates
+for (i in 1:25) {
+  # ward i summary table
+  ward_summary <- summary_tables[[i]]
+  
+  # making sure data exists
+  if (nrow(ward_summary) >= 3) {
+    # order by total votes
+    sorted_candidates <- ward_summary %>%
+      arrange(desc(total_votes))
+    
+    # first place is ward total, so winner is 'second' and runnerup is 'third'
+    Winner <- sorted_candidates$Candidate[2]
+    Runner_Up <- sorted_candidates$Candidate[3]
+    vote_difference <- sorted_candidates$total_votes[2] - sorted_candidates$total_votes[3]
+    
+    # put into dataframe
+    second_third_results <- rbind(second_third_results, 
+                                  data.frame(Ward = paste0("Ward ", i), 
+                                             Winner = Winner, 
+                                             Runner_Up = Runner_Up, 
+                                             Vote_Difference = vote_difference))
+  }
+}
+
+# sort by smallest vote difference to see which wards had more competitve races
+most_contested_second_third <- second_third_results %>%
+  arrange(Vote_Difference) %>%
+  head(25) # Get the top 10 wards with the smallest difference
+
+# print table
+print(kable(most_contested_second_third, caption = "Wards with Smallest Difference Between Winner and RunnerUp"))
+
+
+@fig-candidatewards shows the distribution of votes in each ward among Chow, Bailão, and Saunders. As wards have different population sizes and densities, this view allows you to see how wards vote relative to its population and in comparison to other wards.
+
+{r}
+#| label: fig-candidatewards
+#| fig-cap: The number of votes the top 3 candidates, Olivia Chow, Ana Bailão, and Mark Saunders received, broken down by ward.
+#| echo: false
+#| fig-width: 6
+#| fig-height: 4
+
+# confirming data exists
+ if (nrow(total_votes_all) > 0) {
+  # top 3 candidates filter
+  selected_candidates <- c("Chow Olivia", "Bailão Ana", "Saunders Mark")
+  filtered_votes <- total_votes_all %>%
+    filter(Candidate %in% selected_candidates)
+  
+  # create bar chart for # of votes for the selected 3 candidates in each ward
+  ggplot(filtered_votes, aes(x = Ward, y = total_votes, fill = Candidate)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    theme_minimal() +
+    labs(
+      title = "Comparison of Votes by Ward for Selected Candidates",
+      x = "Ward",
+      y = "Total Votes"
+    ) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+  
+} else {
+  print("No data available for plotting combined results.")
+}
+
+Releasing and tracking this data is incredibly important towards understanding why Torontonians vote the way they vote. It shows what issues are important to voters and what policies and values resonate with the people and we can determine that through regional demographic information. It is through understanding this information that we can work towards building a better Toronto that represents the wellbeing and wishes of its people
+
+\appendix
+
+Appendix
+
+To prepare the data for analysis, I filtered the data to exclude any non-candidate-related votes and removing any unnecessary columns. Several R packages were used to process, clean, and visualize the data in this paper: ggplot2 (@tidyverse), dplyr (@tidyverse), knitr (@knitr), readxl (@tidyverse), and tidyverse (@tidyverse).
+
+Below, @tbl-wardtotals contains the vote breakdown for all 102 candidates by ward.
+
+\tiny
+
+{r}
+#| label: tbl-wardtotals
+#| tbl-cap: The number of votes cast in each ward for each candidate.
+#| echo: false
+#| output: asis
+#| font-size: tiny
+
+# dataframe for all the combined info
+combined_table <- data.frame()
+
+# get the data from each ward
+for (i in 1:25) {
+  # turn data into format wanted
+  ward_data_long <- wards[[i]] %>%
+    pivot_longer(-Subdivision, names_to = "Candidate", values_to = "Votes") %>%
+    mutate(Ward = paste0("Ward ", i), Votes = as.numeric(Votes)) %>%
+    filter(!is.na(Votes))
+  
+  # add to the dataframe
+  combined_table <- bind_rows(combined_table, ward_data_long)
+}
+
+# get votes per candidate and ward
+final_table <- combined_table %>%
+  group_by(Candidate, Ward) %>%
+  summarize(Total_Votes = sum(Votes, na.rm = TRUE), .groups = "drop") %>%
+  # filter out the ward totals from candidate list
+  filter(!str_starts(Candidate, "City")) %>%
+  pivot_wider(names_from = Ward, values_from = Total_Votes, values_fill = list(Total_Votes = 0))
+
+# make columns just ward # and put in numerical order
+final_table <- final_table %>%
+  rename_with(~ gsub("Ward ", "", .), starts_with("Ward"))
+
+ward_columns <- colnames(final_table)[-1]
+numeric_colnames <- as.numeric(ward_columns)
+
+final_table <- final_table %>%
+  select(Candidate, all_of(ward_columns[order(numeric_colnames)]))
+
+# print table
+if (nrow(final_table) > 0) {
+  kable(final_table, caption = "Total Votes for Each Candidate by Ward", format = "markdown", booktabs = TRUE)
+} else {
+  cat("No data available for the table.")
+}
+
+\normalsize
+
+\newpage
+
+References
